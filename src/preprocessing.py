@@ -326,6 +326,38 @@ class DataPreprocessor:
         logger.info(f"Preprocessing complete. Final shape: X={X.shape}, y={len(y)}")
         
         return X, y
+    
+    def transform(self, df):
+        """
+        Transform new data using fitted preprocessor.
+        Use this for making predictions on new data.
+        
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            Input dataframe
+            
+        Returns:
+        --------
+        pandas.DataFrame : Preprocessed features
+        """
+        logger.info("Transforming new data...")
+        
+        # Engineer features
+        df_transformed = self.engineer_features(df)
+        
+        # Handle missing values
+        df_transformed = self.handle_missing_values(df_transformed)
+        
+        # Encode categorical features
+        df_transformed = self.encode_categorical_features(df_transformed, encoding_method='onehot')
+        
+        # Scale numerical features (without fitting)
+        df_transformed = self.scale_numerical_features(df_transformed, fit=False)
+        
+        logger.info(f"Transformation complete. Shape: {df_transformed.shape}")
+        
+        return df_transformed
 
 
 def load_data(filepath, **kwargs):
