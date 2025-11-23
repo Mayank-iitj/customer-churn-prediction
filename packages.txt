@@ -1,0 +1,6 @@
+# Streamlit Cloud Packages
+# System-level dependencies for Streamlit Cloud deployment
+
+# For scientific computing and visualization
+python-dev
+build-essential

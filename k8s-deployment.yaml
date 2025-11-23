@@ -1,0 +1,151 @@
+# Kubernetes Deployment Configuration
+# This file defines the Kubernetes deployment for the Customer Churn Prediction app
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-churn-prediction
+  labels:
+    app: customer-churn-prediction
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: customer-churn-prediction
+  template:
+    metadata:
+      labels:
+        app: customer-churn-prediction
+    spec:
+      containers:
+      - name: churn-app
+        image: customer-churn-prediction:latest
+        ports:
+        - containerPort: 8501
+          name: http
+        env:
+        - name: STREAMLIT_SERVER_PORT
+          value: "8501"
+        - name: STREAMLIT_SERVER_ADDRESS
+          value: "0.0.0.0"
+        - name: STREAMLIT_SERVER_HEADLESS
+          value: "true"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: models-volume
+          mountPath: /app/models
+        - name: results-volume
+          mountPath: /app/results
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: churn-data-pvc
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: churn-models-pvc
+      - name: results-volume
+        persistentVolumeClaim:
+          claimName: churn-results-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-churn-service
+  labels:
+    app: customer-churn-prediction
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8501
+    protocol: TCP
+    name: http
+  selector:
+    app: customer-churn-prediction
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: churn-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: churn-models-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: churn-results-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: churn-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: customer-churn-prediction
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

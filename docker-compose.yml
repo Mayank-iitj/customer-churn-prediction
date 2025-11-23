@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  churn-prediction-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customer-churn-app
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount data directory for persistence
+      - ./data:/app/data
+      # Mount models directory for trained models
+      - ./models:/app/models
+      # Mount results directory for outputs
+      - ./results:/app/results
+      # Mount logs directory
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_PATH=/app/data/customer_churn.csv
+      - MODEL_PATH=/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - churn-network
+
+  # Optional: Training service (run model training separately)
+  churn-training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customer-churn-training
+    command: python main.py
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_PATH=/app/data/customer_churn.csv
+    networks:
+      - churn-network
+    profiles:
+      - training
+
+networks:
+  churn-network:
+    driver: bridge
+
+volumes:
+  data:
+  models:
+  results:
+  logs:
