@@ -90,7 +90,7 @@ dmypy.json
 # Project specific
 logs/
 *.log
-models/*.pkl
+# models/*.pkl  # Uncomment to ignore model files
 results/
 data/*.csv
 !data/README.md
