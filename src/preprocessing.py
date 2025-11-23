@@ -39,6 +39,7 @@ class DataPreprocessor:
         self.categorical_imputer = SimpleImputer(strategy='most_frequent')
         self.numerical_features = []
         self.categorical_features = []
+        self.feature_columns = None  # Store training feature columns
         
     def identify_feature_types(self, df, target_column='Churn'):
         """
@@ -323,6 +324,11 @@ class DataPreprocessor:
         if handle_imbalance and fit:
             X, y = self.handle_class_imbalance(X, y)
         
+        # Store feature columns for later alignment
+        if fit:
+            self.feature_columns = X.columns.tolist()
+            logger.info(f"Stored {len(self.feature_columns)} feature columns")
+        
         logger.info(f"Preprocessing complete. Final shape: X={X.shape}, y={len(y)}")
         
         return X, y
@@ -347,13 +353,46 @@ class DataPreprocessor:
         df_transformed = self.engineer_features(df)
         
         # Handle missing values
-        df_transformed = self.handle_missing_values(df_transformed)
+        if self.numerical_features:
+            df_transformed[self.numerical_features] = self.numerical_imputer.transform(
+                df_transformed[self.numerical_features]
+            )
         
-        # Encode categorical features
-        df_transformed = self.encode_categorical_features(df_transformed, encoding_method='onehot')
+        if self.categorical_features:
+            df_transformed[self.categorical_features] = self.categorical_imputer.transform(
+                df_transformed[self.categorical_features]
+            )
+        
+        # Encode categorical features with one-hot encoding
+        df_transformed = pd.get_dummies(
+            df_transformed, 
+            columns=self.categorical_features,
+            drop_first=True,
+            prefix=self.categorical_features
+        )
+        
+        # Update numerical features after encoding
+        current_numerical = df_transformed.select_dtypes(include=['int64', 'float64']).columns.tolist()
         
         # Scale numerical features (without fitting)
-        df_transformed = self.scale_numerical_features(df_transformed, fit=False)
+        if current_numerical:
+            # Only scale features that were in the original numerical features
+            features_to_scale = [f for f in current_numerical if f in self.numerical_features]
+            if features_to_scale:
+                df_transformed[features_to_scale] = self.scaler.transform(
+                    df_transformed[features_to_scale]
+                )
+        
+        # Align columns with training data
+        if self.feature_columns is not None:
+            # Add missing columns with 0s
+            for col in self.feature_columns:
+                if col not in df_transformed.columns:
+                    df_transformed[col] = 0
+            
+            # Remove extra columns and reorder to match training
+            df_transformed = df_transformed[self.feature_columns]
+            logger.info(f"Aligned features to match training: {len(self.feature_columns)} columns")
         
         logger.info(f"Transformation complete. Shape: {df_transformed.shape}")
         
