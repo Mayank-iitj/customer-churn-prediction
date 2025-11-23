@@ -167,11 +167,17 @@ def create_input_form():
     return pd.DataFrame([customer_data])
 
 
-def predict_churn(model, data):
+def predict_churn(model, preprocessor, data):
     """Make churn prediction."""
     try:
-        prediction = model.predict(data)
-        probability = model.predict_proba(data)
+        # Preprocess the data if preprocessor is available
+        if preprocessor is not None:
+            data_processed = preprocessor.transform(data)
+        else:
+            data_processed = data
+            
+        prediction = model.predict(data_processed)
+        probability = model.predict_proba(data_processed)
         
         return prediction[0], probability[0]
     except Exception as e:
@@ -239,7 +245,7 @@ def display_prediction(prediction, probability):
         """)
 
 
-def batch_prediction_interface(model):
+def batch_prediction_interface(model, preprocessor):
     """Interface for batch predictions."""
     st.markdown('<p class="sub-header">Batch Prediction</p>', unsafe_allow_html=True)
     
@@ -255,9 +261,15 @@ def batch_prediction_interface(model):
             
             if st.button("Generate Predictions"):
                 with st.spinner("Making predictions..."):
+                    # Preprocess data if preprocessor is available
+                    if preprocessor is not None:
+                        df_processed = preprocessor.transform(df)
+                    else:
+                        df_processed = df
+                    
                     # Make predictions
-                    predictions = model.predict(df)
-                    probabilities = model.predict_proba(df)
+                    predictions = model.predict(df_processed)
+                    probabilities = model.predict_proba(df_processed)
                     
                     # Add results to dataframe
                     df['Churn_Prediction'] = predictions
@@ -348,14 +360,14 @@ def main():
         
         if st.button("Predict Churn", type="primary"):
             with st.spinner("Making prediction..."):
-                prediction, probability = predict_churn(model, customer_data)
+                prediction, probability = predict_churn(model, preprocessor, customer_data)
                 
                 if prediction is not None:
                     display_prediction(prediction, probability)
     
     elif app_mode == "Batch Prediction":
         # Batch predictions
-        batch_prediction_interface(model)
+        batch_prediction_interface(model, preprocessor)
     
     else:
         # Model information
