@@ -96,19 +96,18 @@ def load_model_and_preprocessor():
             return model, preprocessor
         else:
             return None, None
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        st.warning("Model compatibility issue detected. Attempting to retrain...")
-        # Try to auto-retrain if compatibility issue
-        if "cannot import name" in str(e) or "ModuleNotFoundError" in str(e):
+    except (AttributeError, ModuleNotFoundError) as e:
+        # Model compatibility issue - attempt auto-retrain
+        st.warning("⚠️ Model compatibility issue detected. Retraining model...")
+        if "monotonic_cst" in str(e) or "cannot import name" in str(e) or "ModuleNotFoundError" in str(e):
             try:
                 st.info("Training a new model compatible with current environment...")
                 import subprocess
-                result = subprocess.run([sys.executable, 'train_simple.py'], 
-                                      capture_output=True, text=True, timeout=60)
+                result = subprocess.run([sys.executable, 'train_quick.py'], 
+                                      capture_output=True, text=True, timeout=120)
                 if result.returncode == 0:
-                    st.success("Model retrained successfully! Reloading...")
-                    # Reload the model
+                    st.success("✓ Model retrained successfully! Please refresh the page.")
+                    # Try loading again
                     model_path = os.path.join('models', 'best_model.pkl')
                     preprocessor_path = os.path.join('models', 'preprocessor.pkl')
                     if os.path.exists(model_path):
@@ -119,6 +118,10 @@ def load_model_and_preprocessor():
                     st.error(f"Retraining failed: {result.stderr}")
             except Exception as train_error:
                 st.error(f"Auto-retraining failed: {train_error}")
+                st.info("Please run: python train_quick.py manually")
+        return None, None
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
         return None, None
 
 
