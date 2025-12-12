@@ -193,7 +193,25 @@ def predict_churn(model, preprocessor, data):
     try:
         # Preprocess the data if preprocessor is available
         if preprocessor is not None:
-            data_processed = preprocessor.transform(data)
+            # Handle both dict-style and object-style preprocessors
+            if isinstance(preprocessor, dict):
+                # New format from train_quick.py
+                data_processed = data.copy()
+                
+                # Encode categorical columns
+                for col in preprocessor.get('categorical_cols', []):
+                    if col in data_processed.columns and col in preprocessor['label_encoders']:
+                        le = preprocessor['label_encoders'][col]
+                        data_processed[col] = le.transform(data_processed[col].astype(str))
+                
+                # Scale numerical columns
+                if 'scaler' in preprocessor and 'numerical_cols' in preprocessor:
+                    num_cols = preprocessor['numerical_cols']
+                    if num_cols:
+                        data_processed[num_cols] = preprocessor['scaler'].transform(data_processed[num_cols])
+            else:
+                # Old format - object with transform method
+                data_processed = preprocessor.transform(data)
         else:
             data_processed = data
             
@@ -203,6 +221,8 @@ def predict_churn(model, preprocessor, data):
         return prediction[0], probability[0]
     except Exception as e:
         st.error(f"Error making prediction: {e}")
+        import traceback
+        st.error(traceback.format_exc())
         return None, None
 
 
@@ -284,7 +304,23 @@ def batch_prediction_interface(model, preprocessor):
                 with st.spinner("Making predictions..."):
                     # Preprocess data if preprocessor is available
                     if preprocessor is not None:
-                        df_processed = preprocessor.transform(df)
+                        # Handle both dict-style and object-style preprocessors
+                        if isinstance(preprocessor, dict):
+                            df_processed = df.copy()
+                            
+                            # Encode categorical columns
+                            for col in preprocessor.get('categorical_cols', []):
+                                if col in df_processed.columns and col in preprocessor['label_encoders']:
+                                    le = preprocessor['label_encoders'][col]
+                                    df_processed[col] = le.transform(df_processed[col].astype(str))
+                            
+                            # Scale numerical columns
+                            if 'scaler' in preprocessor and 'numerical_cols' in preprocessor:
+                                num_cols = preprocessor['numerical_cols']
+                                if num_cols:
+                                    df_processed[num_cols] = preprocessor['scaler'].transform(df_processed[num_cols])
+                        else:
+                            df_processed = preprocessor.transform(df)
                     else:
                         df_processed = df
                     

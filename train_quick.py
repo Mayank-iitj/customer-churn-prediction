@@ -98,10 +98,19 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 results_dir = f'results/{timestamp}'
 os.makedirs(results_dir, exist_ok=True)
 
+# Create preprocessor info
+preprocessor_info = {
+    'label_encoders': label_encoders,
+    'scaler': scaler,
+    'categorical_cols': categorical_cols,
+    'numerical_cols': numerical_cols,
+    'feature_names': list(X_train.columns)
+}
+
 joblib.dump(model, 'models/best_model.pkl')
-joblib.dump({'label_encoders': label_encoders, 'scaler': scaler}, 'models/preprocessor.pkl')
+joblib.dump(preprocessor_info, 'models/preprocessor.pkl')
 joblib.dump(model, f'{results_dir}/best_model.pkl')
-joblib.dump({'label_encoders': label_encoders, 'scaler': scaler}, f'{results_dir}/preprocessor.pkl')
+joblib.dump(preprocessor_info, f'{results_dir}/preprocessor.pkl')
 
 # Save metrics
 metrics_df = pd.DataFrame({
