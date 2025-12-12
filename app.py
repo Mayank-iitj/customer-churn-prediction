@@ -126,7 +126,7 @@ def load_model_and_preprocessor():
 
 
 def create_input_form():
-    """Create input form for customer data."""
+    """Create input form for customer data - Updated for new dataset format."""
     st.markdown('<p class="sub-header">Enter Customer Information</p>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
@@ -134,58 +134,38 @@ def create_input_form():
     with col1:
         st.subheader("Demographics")
         gender = st.selectbox("Gender", ["Male", "Female"])
-        senior_citizen = st.selectbox("Senior Citizen", ["No", "Yes"])
-        partner = st.selectbox("Has Partner", ["No", "Yes"])
-        dependents = st.selectbox("Has Dependents", ["No", "Yes"])
+        age = st.slider("Age", 18, 100, 35)
     
     with col2:
         st.subheader("Account Information")
         tenure = st.slider("Tenure (months)", 0, 72, 12)
-        contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
-        payment_method = st.selectbox("Payment Method", 
-                                     ["Electronic check", "Mailed check", 
-                                      "Bank transfer (automatic)", "Credit card (automatic)"])
-        paperless_billing = st.selectbox("Paperless Billing", ["No", "Yes"])
+        subscription_type = st.selectbox("Subscription Type", ["Basic", "Standard", "Premium"])
+        contract_length = st.selectbox("Contract Length", ["Monthly", "Quarterly", "Annual"])
     
     with col3:
-        st.subheader("Services")
-        phone_service = st.selectbox("Phone Service", ["No", "Yes"])
-        multiple_lines = st.selectbox("Multiple Lines", ["No", "Yes", "No phone service"])
-        internet_service = st.selectbox("Internet Service", ["No", "DSL", "Fiber optic"])
-        online_security = st.selectbox("Online Security", ["No", "Yes", "No internet service"])
-        online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"])
-        device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"])
-        tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"])
-        streaming_tv = st.selectbox("Streaming TV", ["No", "Yes", "No internet service"])
-        streaming_movies = st.selectbox("Streaming Movies", ["No", "Yes", "No internet service"])
+        st.subheader("Usage & Support")
+        usage_frequency = st.slider("Usage Frequency (days/month)", 0, 30, 15)
+        support_calls = st.slider("Support Calls", 0, 20, 2)
+        payment_delay = st.slider("Payment Delay (days)", 0, 30, 0)
     
     col1, col2 = st.columns(2)
     with col1:
-        monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, max_value=200.0, value=50.0, step=0.5)
+        total_spend = st.number_input("Total Spend ($)", min_value=0.0, max_value=10000.0, value=500.0, step=10.0)
     with col2:
-        total_charges = st.number_input("Total Charges ($)", min_value=0.0, max_value=10000.0, value=500.0, step=10.0)
+        last_interaction = st.slider("Days Since Last Interaction", 0, 90, 10)
     
-    # Create customer data dictionary
+    # Create customer data dictionary matching new dataset format
     customer_data = {
-        'gender': gender,
-        'SeniorCitizen': 1 if senior_citizen == "Yes" else 0,
-        'Partner': partner,
-        'Dependents': dependents,
-        'tenure': tenure,
-        'PhoneService': phone_service,
-        'MultipleLines': multiple_lines,
-        'InternetService': internet_service,
-        'OnlineSecurity': online_security,
-        'OnlineBackup': online_backup,
-        'DeviceProtection': device_protection,
-        'TechSupport': tech_support,
-        'StreamingTV': streaming_tv,
-        'StreamingMovies': streaming_movies,
-        'Contract': contract,
-        'PaperlessBilling': paperless_billing,
-        'PaymentMethod': payment_method,
-        'MonthlyCharges': monthly_charges,
-        'TotalCharges': total_charges
+        'Age': float(age),
+        'Gender': gender,
+        'Tenure': float(tenure),
+        'Usage Frequency': float(usage_frequency),
+        'Support Calls': float(support_calls),
+        'Payment Delay': float(payment_delay),
+        'Subscription Type': subscription_type,
+        'Contract Length': contract_length,
+        'Total Spend': float(total_spend),
+        'Last Interaction': float(last_interaction),
     }
     
     return pd.DataFrame([customer_data])
