@@ -285,6 +285,15 @@ def batch_prediction_interface(model, preprocessor):
             
             if st.button("Generate Predictions"):
                 with st.spinner("Making predictions..."):
+                    # Store original df for display
+                    df_original = df.copy()
+                    
+                    # Remove ID columns before processing
+                    id_cols = ['CustomerID', 'customer_id', 'id', 'ID']
+                    cols_to_drop = [col for col in id_cols if col in df.columns]
+                    if cols_to_drop:
+                        df = df.drop(columns=cols_to_drop)
+                    
                     # Preprocess data if preprocessor is available
                     if preprocessor is not None:
                         # Handle both dict-style and object-style preprocessors
@@ -311,12 +320,15 @@ def batch_prediction_interface(model, preprocessor):
                     predictions = model.predict(df_processed)
                     probabilities = model.predict_proba(df_processed)
                     
-                    # Add results to dataframe
-                    df['Churn_Prediction'] = predictions
-                    df['Churn_Probability'] = probabilities[:, 1]
-                    df['Risk_Level'] = df['Churn_Probability'].apply(
+                    # Add results to original dataframe (with ID columns)
+                    df_original['Churn_Prediction'] = predictions
+                    df_original['Churn_Probability'] = probabilities[:, 1]
+                    df_original['Risk_Level'] = df_original['Churn_Probability'].apply(
                         lambda x: 'High' if x > 0.7 else 'Medium' if x > 0.4 else 'Low'
                     )
+                    
+                    # Use df_original for display
+                    df = df_original
                     
                     st.success("Predictions completed!")
                     

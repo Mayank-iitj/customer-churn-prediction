@@ -64,6 +64,13 @@ def train_model():
     X = df.drop('Churn', axis=1)
     y = df['Churn']
     
+    # Drop ID columns that shouldn't be used for training
+    id_cols = ['CustomerID', 'customer_id', 'id', 'ID']
+    cols_to_drop = [col for col in id_cols if col in X.columns]
+    if cols_to_drop:
+        X = X.drop(columns=cols_to_drop)
+        print(f"   Dropped ID columns: {cols_to_drop}")
+    
     # Identify categorical and numerical columns
     categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
     numerical_cols = X.select_dtypes(include=['number']).columns.tolist()
