@@ -55,6 +55,10 @@ def train_model():
     df = pd.read_csv(data_path)
     print(f"   Loaded {len(df):,} samples with {df.shape[1]} columns")
     
+    # Drop rows with missing target values
+    df = df.dropna(subset=['Churn'])
+    print(f"   After removing NaN in target: {len(df):,} samples")
+    
     # Prepare features and target
     print("\n2. Preparing features...")
     X = df.drop('Churn', axis=1)
